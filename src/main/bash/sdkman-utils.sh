@@ -23,45 +23,46 @@ function __sdkman_echo_debug {
 }
 
 function __sdkman_secure_curl {
+	local params=(--silent --location)
 	if [[ "${sdkman_insecure_ssl}" == 'true' ]]; then
-		curl --insecure --silent --location "$1"
-	else
-		curl --silent --location "$1"
+		params+=(--insecure)
 	fi
+	curl "${params[@]}" "$1"
 }
 
 function __sdkman_secure_curl_download {
-	local curl_params="--progress-bar --location"
+	local params=(--progress-bar --location)
+
 	if [[ "${sdkman_insecure_ssl}" == 'true' ]]; then
-		curl_params="$curl_params --insecure"
+		params+=(--insecure)
 	fi
 
 	local cookie_file="${SDKMAN_DIR}/var/cookie"
-
 	if [[ -f "$cookie_file" ]]; then
-		local cookie=$(cat "$cookie_file")
-		curl_params="$curl_params --cookie $cookie"
+		local cookie=$(<"$cookie_file")
+		params+=(--cookie "$cookie")
 	fi
 
-	if [[ "$zsh_shell" == 'true' ]]; then
-		curl ${=curl_params} "$1"
-	else
-		curl ${curl_params} "$1"
-	fi
+	curl "${params[@]}" "$1"
 }
 
 function __sdkman_secure_curl_with_timeouts {
+	local params=(
+		--silent
+		--location
+		--connect-timeout ${sdkman_curl_connect_timeout}
+		--max-time ${sdkman_curl_max_time}
+	)
 	if [[ "${sdkman_insecure_ssl}" == 'true' ]]; then
-		curl --insecure --silent --location --connect-timeout ${sdkman_curl_connect_timeout} --max-time ${sdkman_curl_max_time} "$1"
-	else
-		curl --silent --location --connect-timeout ${sdkman_curl_connect_timeout} --max-time ${sdkman_curl_max_time} "$1"
+		params+=(--insecure)
 	fi
+	curl "${params[@]}" "$1"
 }
 
 function __sdkman_page {
 	if [[ -n "$PAGER" ]]; then
 		"$@" | eval $PAGER
-	elif command -v less >& /dev/null; then
+	elif command -v less &> /dev/null; then
 		"$@" | less
 	else
 		"$@"
